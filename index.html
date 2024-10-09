@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disaster Management Weather Data</title>
+</head>
+<body>
+  <h1>Fetch Weather Data</h1>
+  <form id="weatherForm">
+    <label for="city">City:</label>
+    <input type="text" id="city" name="city" placeholder="Enter city name" required>
+    <button type="submit">Get Weather</button>
+  </form>
+  
+  <div id="weatherOutput"></div>
+
+  <!-- Firebase and JS SDK Imports -->
+  <script type="module">
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyAfXEFnQ4Im7EQbT6LuHlXuYuzxFQBcvrk",
+      authDomain: "disaster-management-cbfff.firebaseapp.com",
+      databaseURL: "https://disaster-management-cbfff-default-rtdb.firebaseio.com",
+      projectId: "disaster-management-cbfff",
+      storageBucket: "disaster-management-cbfff.appspot.com",
+      messagingSenderId: "1085480797085",
+      appId: "1:1085480797085:web:1f3733f17c28dfa33ea574",
+      measurementId: "G-FKR2JP176P"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const database = getDatabase(app);
+
+    //new api key 
+    const apiKey = "0a7bc13df05256b96655b26726eb4354";
+
+    document.getElementById('weatherForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const city = document.getElementById('city').value;
+
+      const weatherAPIUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+      fetch(weatherAPIUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.cod === 200) {
+            const weatherData = {
+              temperature: data.main.temp,
+              description: data.weather[0].description,
+              humidity: data.main.humidity,
+              windSpeed: data.wind.speed,
+              timestamp: new Date().toISOString()
+            };
+
+            
+            document.getElementById('weatherOutput').innerHTML = `
+              <h2>Weather in ${city}</h2>
+              <p>Temperature: ${weatherData.temperature}°C</p>
+              <p>Description: ${weatherData.description}</p>
+              <p>Humidity: ${weatherData.humidity}%</p>
+              <p>Wind Speed: ${weatherData.windSpeed} m/s</p>
+            `;
+
+            
+            const weatherRef = ref(database, 'weather/' + city);
+            set(weatherRef, weatherData)
+              .then(() => {
+                console.log("Weather data stored successfully in Firebase.");
+              })
+              .catch((error) => {
+                console.error("Error storing weather data:", error);
+              });
+          } else {
+            //error handeling
+            document.getElementById('weatherOutput').innerHTML = `<p>Error: ${data.message}</p>`;
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching weather data:', error);
+          document.getElementById('weatherOutput').innerHTML = `<p>Error fetching weather data.</p>`;
+        });
+    });
+  </script>
+
+</body>
+</html>
